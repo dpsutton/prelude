@@ -7,7 +7,8 @@
 ;; load things onto exec path
 (defvar extra-on-path
   '("/home/dan/.cask/bin/cask"
-    "/home/dan/bin"))
+    "/home/dan/bin"
+    "/home/dan/racket/bin/racket"))
 
 (setq exec-path (append exec-path extra-on-path))
 
@@ -39,7 +40,7 @@
 ;; turn off the system bell
 (setq ring-bell-function 'ignore)
 
-(defvar my-lisps '(clojure lisp emacs-lisp cider-repl geiser geiser-repl racket scheme slime))
+(defvar my-lisps '(clojure lisp emacs-lisp cider-repl geiser geiser-repl racket scheme slime repl))
 (defvar my-text-environments '(org markdown))
 
 (defun standard-lisp-environment ()
@@ -207,7 +208,8 @@ pkill, etc."
 
 (defvar my-clojure-directory "/home/dan/projects/clojure/")
 (defun my-cloned-name (url)
-  (car (last (s-split "/" url))))
+  (s-replace ".git" ""
+             (car (last (s-split "/" url)))))
 
 (defun my-git-clone-clojure (url)
   (interactive "s")
