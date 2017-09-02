@@ -241,8 +241,7 @@ pkill, etc."
          (filename (file-name-nondirectory (buffer-file-name buf)))
          (basename (file-name-sans-extension filename))
          (doc-name (format "%s.docx" basename))
-         (reference "~/law/1L/reference.docx")
-         (command (format "pandoc -s %s -o %s --reference-docx %s" filename doc-name
-                          reference)))
+         (command (format "pandoc -s %s -o %s" filename doc-name)))
     (shell-command command)))
+
 ;;; personal.el ends here
