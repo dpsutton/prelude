@@ -16,6 +16,10 @@
 (add-to-list 'load-path "~/projects/cider")
 (require 'cider)
 
+(add-to-list 'load-path "~/projects/inf-clojure")
+;; (require 'inf-clojure-minor-mode)
+
+
 ;; make cider font lock as much as possible
 (setq cider-font-lock-dynamically t)
 
@@ -243,5 +247,17 @@ pkill, etc."
          (doc-name (format "%s.docx" basename))
          (command (format "pandoc -s %s -o %s" filename doc-name)))
     (shell-command command)))
+
+(defun scrabble-phrase (phrase)
+  (interactive "sPhrase to scrabble: ")
+  (let* ((characters (s-split "" phrase t))
+         (memed (mapcar (lambda (char)
+                          (if (s-blank-str? char)
+                              ":scrabble-blank:"
+                            (format ":scrabble-%s:" char)))
+                        characters))
+         (finished (s-join " " memed)))
+    (kill-new finished)
+    (message (format "Copied: %s" (s-truncate 60 finished)))))
 
 ;;; personal.el ends here
