@@ -93,7 +93,7 @@ Only modes that don't derive from `prog-mode' should be listed here."
   :type 'number
   :group 'prelude)
 
-(defcustom prelude-theme 'plan9
+(defcustom prelude-theme 'brin
   "The default color theme, change this in your /personal/preload config."
   :type 'symbol
   :group 'prelude)

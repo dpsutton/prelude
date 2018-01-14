@@ -4,17 +4,26 @@
 
 ;;; Code:
 
+(package-initialize)
+(show-paren-mode)
+(global-auto-highlight-symbol-mode t)
+
 ;; load things onto exec path
 (defvar extra-on-path
   '("/home/dan/.cask/bin/cask"
-    "/home/dan/bin"
-    "/home/dan/racket/bin/racket"))
+    "/home/dan/bin"))
 
 (setq exec-path (append exec-path extra-on-path))
 
 ;; load local version of cider
 (add-to-list 'load-path "~/projects/cider")
 (require 'cider)
+
+;; make cider repl indent and newline on enter and eval on
+;; control-enter
+
+(define-key cider-repl-mode-map (kbd "RET") #'cider-repl-newline-and-indent)
+(define-key cider-repl-mode-map (kbd "C-<return>") #'cider-repl-return)
 
 (add-to-list 'load-path "~/projects/inf-clojure")
 ;; (require 'inf-clojure-minor-mode)
@@ -23,23 +32,18 @@
 ;; make cider font lock as much as possible
 (setq cider-font-lock-dynamically t)
 
-;; load local version of elfeed
-(add-to-list 'load-path "~/projects/elfeed")
-(require 'elfeed)
-(global-set-key (kbd "C-x w") 'elfeed)
-
-(setq elfeed-feeds
-      '(("http://endlessparentheses.com/atom.xml" emacs elisp)
-        ("http://feeds2.feedburner.com/StuartSierra" clojure)
-        ("https://jeremykun.com/feed/" math programming)
-        ("http://lambda-the-ultimate.org/rss.xml" languages)
-        ("http://swannodette.github.io/atom.xml" clojurescript)
-        ("http://feeds.feedburner.com/SoftwareByRob" programming)
-        ("https://rjlipton.wordpress.com/feed/" math godel)
-        ("http://feeds.feedburner.com/Kodeknight" algorithms)
-        ("http://danluu.com/atom.xml" programming)
-        ("http://jvns.ca/atom.xml" programming)
-        ("http://tromey.com/blog/?feed=rss2" emacs java)))
+;; (setq elfeed-feeds
+;;       '(("http://endlessparentheses.com/atom.xml" emacs elisp)
+;;         ("http://feeds2.feedburner.com/StuartSierra" clojure)
+;;         ("https://jeremykun.com/feed/" math programming)
+;;         ("http://lambda-the-ultimate.org/rss.xml" languages)
+;;         ("http://swannodette.github.io/atom.xml" clojurescript)
+;;         ("http://feeds.feedburner.com/SoftwareByRob" programming)
+;;         ("https://rjlipton.wordpress.com/feed/" math godel)
+;;         ("http://feeds.feedburner.com/Kodeknight" algorithms)
+;;         ("http://danluu.com/atom.xml" programming)
+;;         ("http://jvns.ca/atom.xml" programming)
+;;         ("http://tromey.com/blog/?feed=rss2" emacs java)))
 
 ;; turn off the system bell
 (setq ring-bell-function 'ignore)
@@ -71,7 +75,7 @@
 
 ;; clj-refactor
 (defun additional-clojure-environment ()
-  (yas-minor-mode 1)
+  ; (yas-minor-mode 1)
   ; (cljr-add-keybindings-with-prefix "C-c C-j")
   )
 
@@ -80,15 +84,12 @@
 (hook-up-modes my-lisps 'standard-lisp-environment)
 (hook-up-modes my-text-environments 'standard-text-environment)
 
-;; elpy for python
-(package-initialize)
-(elpy-enable)
-
 ;; company mode
 (add-hook 'after-init-hook 'global-company-mode)
-(add-to-list 'company-backends 'company-c-headers 'slime-company)
+(with-eval-after-load 'company
+  (add-to-list 'company-backends 'company-c-headers 'slime-company))
 
-;; resize window settings
+;; resizeg window settings
 (add-to-list 'load-path "~/projects/resize-window")
 (require 'resize-window)
 
@@ -126,8 +127,8 @@
 (global-set-key (kbd "M-p") 'ace-window)
 
 ;;; tern auto complete for javascript
-(require 'tern)
-(add-hook 'js-mode-hook (lambda () (tern-mode t)))
+;;(require 'tern)
+;;(add-hook 'js-mode-hook (lambda () (tern-mode t)))
 
 (require 'slime)
 (setq slime-contribs '(slime-scratch slime-editing-commands))
@@ -135,8 +136,8 @@
 (add-hook 'inferior-lisp-mode-hook (lambda () (inferior-slime-mode t)))
 
 
-;;(setq inferior-lisp-program "/usr/bin/sbcl")
-(setq inferior-lisp-program "/usr/bin/clisp")
+(setq inferior-lisp-program "/usr/bin/sbcl")
+;;(setq inferior-lisp-program "/usr/bin/clisp")
 
 ;;  off and line numbers
 (setq scroll-margin 6)
@@ -181,10 +182,10 @@
 (define-key global-map [(control o)] 'loccur-current)
 
 ;; yas for helm
-(require 'helm-c-yasnippet)
-(setq helm-yas-space-match-any-greedy t)
-(global-set-key (kbd "C-c l") 'helm-yas-complete)
-(yas-global-mode 1)
+;;(require 'helm-c-yasnippet)
+;;(setq helm-yas-space-match-any-greedy t)
+;; (global-set-key (kbd "C-c l") 'helm-yas-complete)
+;; (yas-global-mode 1)
 
 (global-set-key (kbd "TAB") #'company-indent-or-complete-common)
 (setq company-tooltip-align-annotations t)
@@ -259,5 +260,17 @@ pkill, etc."
          (finished (s-join " " memed)))
     (kill-new finished)
     (message (format "Copied: %s" (s-truncate 60 finished)))))
+
+(defun my-jack-in-jib ()
+  (interactive)
+  (let ((cider-lein-global-options "with-profile dev"))
+    (cider-jack-in-clojurescript)))
+
+(defun my-jack-in-mast ()
+  (interactive)
+  (let ((cider-lein-global-options "with-profile dev"
+         ;; "with-profile +repl-start-server"
+         ))
+    (cider-jack-in)))
 
 ;;; personal.el ends here
