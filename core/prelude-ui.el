@@ -82,7 +82,7 @@
 
 ;; show the cursor when moving after big movements in the window
 (require 'beacon)
-(beacon-mode +1)
+(beacon-mode nil)
 
 ;; show available keybindings after you start typing
 (require 'which-key)

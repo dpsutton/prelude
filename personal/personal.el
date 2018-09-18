@@ -4,9 +4,18 @@
 
 ;;; Code:
 
-(package-initialize)
+;;(package-initialize)
+(add-hook 'after-init-hook
+          (lambda ()
+            (set-face-attribute 'default (selected-frame) :height 160)))
+
 (show-paren-mode)
 (global-auto-highlight-symbol-mode t)
+
+(mapc (lambda (mode)
+        (add-to-list 'ahs-modes mode))
+      '(clojure-mode clojurescript-mode cider-repl-mode))
+(yas-global-mode)
 
 ;; load things onto exec path
 (defvar extra-on-path
@@ -15,9 +24,36 @@
 
 (setq exec-path (append exec-path extra-on-path))
 
+(global-company-mode)
+
+(add-to-list 'load-path "~/projects/dev/clojure-mode")
+(require 'clojure-mode)
+
 ;; load local version of cider
-(add-to-list 'load-path "~/projects/cider")
+(add-to-list 'load-path "~/projects/dev/cider")
 (require 'cider)
+
+(add-to-list 'load-path "~/projects/dev/inf-clojure")
+(require 'inf-clojure)
+
+(defvar my-packages
+  '(geiser
+    loccur
+    rainbow-delimiters
+    paredit
+    ivy
+    counsel
+    swiper
+    moody
+    minions
+    gist))
+
+(defun my-ensure-installed (package)
+  (unless (package-installed-p package)
+    (package-install package)))
+
+(mapc #'my-ensure-installed my-packages)
+
 
 ;; make cider repl indent and newline on enter and eval on
 ;; control-enter
@@ -25,9 +61,17 @@
 (define-key cider-repl-mode-map (kbd "RET") #'cider-repl-newline-and-indent)
 (define-key cider-repl-mode-map (kbd "C-<return>") #'cider-repl-return)
 
-(add-to-list 'load-path "~/projects/inf-clojure")
-;; (require 'inf-clojure-minor-mode)
+;; make inserting eval by default and don't move point to repl
 
+(setq cider-invert-insert-eval-p t)
+(setq cider-switch-to-repl-after-insert-p nil)
+(setq clojure-toplevel-inside-comment-form t)
+
+(require 'geiser-repl)
+(define-key geiser-repl-mode-map (kbd "RET") #'paredit-newline)
+(define-key geiser-repl-mode-map [return] 'paredit-newline)
+(define-key geiser-repl-mode-map "\C-m" #'paredit-newline)
+(define-key geiser-repl-mode-map (kbd "C-<return>") #'geiser-repl--maybe-send)
 
 ;; make cider font lock as much as possible
 (setq cider-font-lock-dynamically t)
@@ -64,45 +108,26 @@
   "take SUFFIX and append it to each of the PHRASES."
   (mapcar #'(lambda (phrase) (concat (symbol-name phrase) suffix)) phrases))
 
-(defun multiple-mode-add-hook (modes hook)
-  "Given a list of x-mode-hook symbols in MODE, add the HOOK to them."
-  (mapc (lambda (mode) (add-hook mode hook)) modes))
-
 (defun hook-up-modes (environments hook)
-  (let ((modes (mapcar #'intern (append-suffix "-mode-hook" environments))))
-    (mapc (lambda (mode) (add-hook mode hook))
-          modes)))
-
-;; clj-refactor
-(defun additional-clojure-environment ()
-  ; (yas-minor-mode 1)
-  ; (cljr-add-keybindings-with-prefix "C-c C-j")
-  )
-
-(add-hook 'clojure-mode-hook 'additional-clojure-environment)
+  (mapc (lambda (mode) (add-hook mode hook))
+        (mapcar (lambda (env) (intern (format "%s-mode-hook" env)))
+                my-lisps)))
 
 (hook-up-modes my-lisps 'standard-lisp-environment)
 (hook-up-modes my-text-environments 'standard-text-environment)
-
-;; company mode
-(add-hook 'after-init-hook 'global-company-mode)
-(with-eval-after-load 'company
-  (add-to-list 'company-backends 'company-c-headers 'slime-company))
 
 ;; resizeg window settings
 (add-to-list 'load-path "~/projects/resize-window")
 (require 'resize-window)
 
-(defun my-projectile-find-file ()
-  (resize-window--delete-overlays)
-  (funcall-interactively 'helm-projectile-find-file)
-  (resize-window--create-overlay))
-
 (setq resize-window-swap-capital-and-lowercase-behavior t)
-(resize-window-add-choice ?l #'helm-mini "helm mini")
-(resize-window-add-choice ?t #'my-projectile-find-file "Projectile find file")
+(resize-window-add-choice ?l #'ivy-switch-buffer "switch buffers with ivy")
 (resize-window-add-choice ?h (lambda () (dired "~/projects/clojure"))
                           "Visit the clojure directory")
+(resize-window-add-choice ?e (lambda () (dired "~/projects/law/1L"))
+                          "Visit law directory")
+(resize-window-add-choice ?m (lambda () (resize-window--window-push))
+                          "Push window state onto window stack")
 (global-set-key (kbd "C-c ;") 'resize-window)
 (global-set-key (kbd "C-c C-;") 'resize-window)
 ;; org mode is stingy with its key mapping
@@ -110,25 +135,60 @@
           (lambda ()
             (define-key org-mode-map (kbd "C-c ;") 'resize-window)))
 
+;; ivy config
+
+(ivy-mode 1)
+(setq ivy-use-virtual-buffers t)
+(setq enable-recursive-minibuffers t)
+(global-set-key "\C-s" 'swiper)
+(global-set-key (kbd "C-c C-r") 'ivy-resume)
+(global-set-key (kbd "<f6>") 'ivy-resume)
+(global-set-key (kbd "M-x") 'counsel-M-x)
+(global-set-key (kbd "C-x C-f") 'counsel-find-file)
+(global-set-key (kbd "<f1> f") 'counsel-describe-function)
+(global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+(global-set-key (kbd "<f1> l") 'counsel-find-library)
+(global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+(global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+(global-set-key (kbd "C-c g") 'counsel-git)
+(global-set-key (kbd "C-c j") 'counsel-git-grep)
+(global-set-key (kbd "C-r") 'counsel-ag)
+(global-set-key (kbd "C-x l") 'counsel-locate)
+(global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
+(define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+
 (slime-setup '(slime-company))
 (slime-setup '(slime-repl))
 (add-to-list 'slime-contribs 'slime-repl)
 
+;; modeline customizations
+(require 'moody)
+(setq x-underline-at-descent-line t)
+(moody-replace-mode-line-buffer-identification)
+(moody-replace-vc-mode)
+
+(require 'minions)
+(minions-mode)
 
 
+(require 'gist)
+(setq gist-list-format
+      '((id "Id" 10 nil identity)
+        (files "Name" 30 nil identity)
+        ;; (created "Created" 20 nil "%D %R")
+        (visibility "Visibility" 10 nil
+                    (lambda (public)
+                      (or (and public "public")
+                          "private")))
+        (description "Description" 0 nil identity)))
 
-;; helm projectile mode
-(require 'helm-projectile)
-(projectile-global-mode)
-(setq projectile-completion-system 'helm)
-(helm-projectile-on)
+(mapc (lambda (e) (add-to-list 'gist-supported-modes-alist e))
+      '((clojurescript-mode "cljs")
+        (clojure-mode "cljc")))
+
 
 ;;; ace setting
 (global-set-key (kbd "M-p") 'ace-window)
-
-;;; tern auto complete for javascript
-;;(require 'tern)
-;;(add-hook 'js-mode-hook (lambda () (tern-mode t)))
 
 (require 'slime)
 (setq slime-contribs '(slime-scratch slime-editing-commands))
@@ -137,21 +197,9 @@
 
 
 (setq inferior-lisp-program "/usr/bin/sbcl")
-;;(setq inferior-lisp-program "/usr/bin/clisp")
 
 ;;  off and line numbers
 (setq scroll-margin 6)
-;; (global-linum-mode t)
-;; (setq linum-format " %3i")
-
-;;; helm mode info
-(require 'helm-config)
-(require 'helm-swoop)
-(helm-mode 1)
-
-;; bind helm mode to M-x
-(global-set-key (kbd "M-x") 'helm-M-x)
-(global-set-key (kbd "C-x b") 'helm-mini)
 
 ;; copy things for the web by appending four spaces beforehand
 (defun copy-defun-for-web ()
@@ -172,20 +220,17 @@
 
 (global-set-key (kbd "C-c C-w") 'copy-defun-for-web)
 
-;; fuzzy searches
-(setq helm-M-x-fuzzy-match nil)
-(setq helm-buffers-fuzzymatching nil)
+(with-eval-after-load 'doc-view
+  (define-key doc-view-mode-map (kbd "j") 'doc-view-next-line-or-next-page)
+  (define-key doc-view-mode-map (kbd "k") 'doc-view-previous-line-or-previous-page)
+  (define-key doc-view-mode-map (kbd "h") 'image-backward-hscroll)
+  (define-key doc-view-mode-map (kbd "l") 'image-forward-hscroll))
 
 
 ;; loccur settings
 (require 'loccur)
 (define-key global-map [(control o)] 'loccur-current)
 
-;; yas for helm
-;;(require 'helm-c-yasnippet)
-;;(setq helm-yas-space-match-any-greedy t)
-;; (global-set-key (kbd "C-c l") 'helm-yas-complete)
-;; (yas-global-mode 1)
 
 (global-set-key (kbd "TAB") #'company-indent-or-complete-common)
 (setq company-tooltip-align-annotations t)
@@ -212,17 +257,30 @@ pkill, etc."
   (kill-emacs))
 
 (defvar my-clojure-directory "/home/dan/projects/clojure/")
+(defvar my-go-directory "/home/dan/projects/go/")
+
 (defun my-cloned-name (url)
   (s-replace ".git" ""
              (car (last (s-split "/" url)))))
 
+(defun my-directory-for-type (type)
+  (case type
+    ('clojure my-clojure-directory)
+    ('go my-go-directory)))
+
+(defun my-git-clone (type url)
+  (let* ((dir (my-directory-for-type type))
+         (cmd (format "cd %s && git clone %s" dir url)))
+    (shell-command cmd)
+    (dired (concat (file-name-as-directory dir) (my-cloned-name url)))))
+
 (defun my-git-clone-clojure (url)
   (interactive "s")
-  (let* ((cmd (format "cd %s && git clone %s"
-                     my-clojure-directory url)))
-    (shell-command cmd)
-    (dired (concat (file-name-as-directory my-clojure-directory)
-                   (my-cloned-name url)))))
+  (my-git-clone 'clojure url))
+
+(defun my-git-clone-go (url)
+  (interactive "s")
+  (my-git-clone 'go url))
 
 (defun cider-debug-create-local-let (start end)
   "During debugging, grab the locally bound vars and create a let
@@ -253,24 +311,29 @@ pkill, etc."
   (interactive "sPhrase to scrabble: ")
   (let* ((characters (s-split "" phrase t))
          (memed (mapcar (lambda (char)
-                          (if (s-blank-str? char)
-                              ":scrabble-blank:"
-                            (format ":scrabble-%s:" char)))
+                          (cond ((s-blank-str? char)
+                                 ":scrabble-blank:")
+                                ((s-matches? "[a-zA-Z]" char)
+                                 (format ":scrabble-%s:" (s-downcase char)))
+                                (t ":scrabble-blank:")))
                         characters))
          (finished (s-join " " memed)))
     (kill-new finished)
     (message (format "Copied: %s" (s-truncate 60 finished)))))
 
-(defun my-jack-in-jib ()
-  (interactive)
-  (let ((cider-lein-global-options "with-profile dev"))
-    (cider-jack-in-clojurescript)))
+(defun clap-phrase (phrase)
+  (interactive "s")
+  (let ((words (s-split-words phrase)))
+    (kill-new (s-join " :clap: " words))))
 
-(defun my-jack-in-mast ()
+(defun rules-engine-ip-string ()
   (interactive)
-  (let ((cider-lein-global-options "with-profile dev"
-         ;; "with-profile +repl-start-server"
-         ))
-    (cider-jack-in)))
+  (let ((ip-address (shell-command-to-string  "hostname -I | cut -d ' ' -f 1 | xargs")))
+    (kill-new (format "http://%s:8084" (s-replace "\n" "" ip-address)))))
 
+(defun my-phi ()
+  (interactive)
+  (insert "(def phi (-> server :_cache (get \"phi-fhir-test\") deref :conn))\n")
+  (insert "(defn what [id] (d/pull (d/db phi) '[*] id))"))
 ;;; personal.el ends here
+
