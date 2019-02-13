@@ -33,6 +33,14 @@
 (add-to-list 'load-path "~/projects/dev/cider")
 (require 'cider)
 
+(defun cider-copy-jack-in-command ()
+  (let ((cider-jack-in-dependencies (append cider-jack-in-dependencies cider-jack-in-cljs-dependencies))
+        (cider-jack-in-lein-plugins (append cider-jack-in-lein-plugins cider-jack-in-cljs-lein-plugins))
+        (cider-jack-in-nrepl-middlewares (append cider-jack-in-nrepl-middlewares cider-jack-in-cljs-nrepl-middlewares))
+        (orig-buffer (current-buffer)))
+    (kill-new (plist-get (cider--update-jack-in-cmd (cider--update-project-dir '()))
+                         :jack-in-cmd))))
+
 (add-to-list 'load-path "~/projects/dev/inf-clojure")
 (require 'inf-clojure)
 
@@ -46,7 +54,12 @@
     swiper
     moody
     minions
-    gist))
+    gist
+    racer
+    rust-mode
+    cargo
+    flycheck-rust
+    company-quickhelp))
 
 (defun my-ensure-installed (package)
   (unless (package-installed-p package)
@@ -75,6 +88,9 @@
 
 ;; make cider font lock as much as possible
 (setq cider-font-lock-dynamically t)
+
+;; don't show the error buffer
+(setq cider-show-error-buffer nil)
 
 ;; (setq elfeed-feeds
 ;;       '(("http://endlessparentheses.com/atom.xml" emacs elisp)
@@ -111,10 +127,15 @@
 (defun hook-up-modes (environments hook)
   (mapc (lambda (mode) (add-hook mode hook))
         (mapcar (lambda (env) (intern (format "%s-mode-hook" env)))
-                my-lisps)))
+                environments)))
 
 (hook-up-modes my-lisps 'standard-lisp-environment)
 (hook-up-modes my-text-environments 'standard-text-environment)
+
+;; company tip stuff
+(company-quickhelp-mode)
+(setq company-quickhelp-use-propertized-text t)
+(setq company-quickhelp-delay 0.2)
 
 ;; resizeg window settings
 (add-to-list 'load-path "~/projects/resize-window")
@@ -122,12 +143,16 @@
 
 (setq resize-window-swap-capital-and-lowercase-behavior t)
 (resize-window-add-choice ?l #'ivy-switch-buffer "switch buffers with ivy")
+(resize-window-add-choice ?a #'counsel-git "Search git files")
 (resize-window-add-choice ?h (lambda () (dired "~/projects/clojure"))
                           "Visit the clojure directory")
-(resize-window-add-choice ?e (lambda () (dired "~/projects/law/1L"))
-                          "Visit law directory")
+(resize-window-add-choice ?u (lambda () (dired "~/ops/projects"))
+                          "Work projects")
+(resize-window-add-choice ?d (lambda () (dired "~/projects/dev"))
+                          "Visit dev directoryq")
 (resize-window-add-choice ?m (lambda () (resize-window--window-push))
                           "Push window state onto window stack")
+(resize-window-add-choice ?s #'counsel-git "Counsel git")
 (global-set-key (kbd "C-c ;") 'resize-window)
 (global-set-key (kbd "C-c C-;") 'resize-window)
 ;; org mode is stingy with its key mapping
@@ -136,6 +161,12 @@
             (define-key org-mode-map (kbd "C-c ;") 'resize-window)))
 
 ;; ivy config
+(defun my-ag-at-point ()
+  (interactive)
+  (let ((current-word (thing-at-point 'symbol)))
+    (counsel-ag current-word)))
+
+(setq ivy-initial-inputs-alist '())
 
 (ivy-mode 1)
 (setq ivy-use-virtual-buffers t)
@@ -152,7 +183,7 @@
 (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
 (global-set-key (kbd "C-c g") 'counsel-git)
 (global-set-key (kbd "C-c j") 'counsel-git-grep)
-(global-set-key (kbd "C-r") 'counsel-ag)
+(global-set-key (kbd "C-r") #'my-ag-at-point)
 (global-set-key (kbd "C-x l") 'counsel-locate)
 (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
 (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
@@ -335,5 +366,7 @@ pkill, etc."
   (interactive)
   (insert "(def phi (-> server :_cache (get \"phi-fhir-test\") deref :conn))\n")
   (insert "(defn what [id] (d/pull (d/db phi) '[*] id))"))
+
+(setq dired-listing-switches "-alh")
 ;;; personal.el ends here
 
