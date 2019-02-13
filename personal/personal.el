@@ -5,6 +5,40 @@
 ;;; Code:
 
 ;;(package-initialize)
+
+(defvar my-packages
+  '(geiser
+    auto-highlight-symbol
+    yasnippet
+    s
+    ;; CIDER deps
+    spinner
+    queue
+    sesman
+    ;; end CIDER deps
+    slime
+    slime-company
+    loccur
+    rainbow-delimiters
+    paredit
+    ivy
+    counsel
+    swiper
+    moody
+    minions
+    gist
+    racer
+    rust-mode
+    cargo
+    flycheck-rust
+    company-quickhelp))
+
+(defun my-ensure-installed (package)
+  (unless (package-installed-p package)
+    (package-install package)))
+
+(mapc #'my-ensure-installed my-packages)
+
 (add-hook 'after-init-hook
           (lambda ()
             (set-face-attribute 'default (selected-frame) :height 160)))
@@ -43,30 +77,6 @@
 
 (add-to-list 'load-path "~/projects/dev/inf-clojure")
 (require 'inf-clojure)
-
-(defvar my-packages
-  '(geiser
-    loccur
-    rainbow-delimiters
-    paredit
-    ivy
-    counsel
-    swiper
-    moody
-    minions
-    gist
-    racer
-    rust-mode
-    cargo
-    flycheck-rust
-    company-quickhelp))
-
-(defun my-ensure-installed (package)
-  (unless (package-installed-p package)
-    (package-install package)))
-
-(mapc #'my-ensure-installed my-packages)
-
 
 ;; make cider repl indent and newline on enter and eval on
 ;; control-enter
@@ -137,8 +147,8 @@
 (setq company-quickhelp-use-propertized-text t)
 (setq company-quickhelp-delay 0.2)
 
-;; resizeg window settings
-(add-to-list 'load-path "~/projects/resize-window")
+;; resize window settings
+(add-to-list 'load-path "~/projects/dev/resize-window")
 (require 'resize-window)
 
 (setq resize-window-swap-capital-and-lowercase-behavior t)
@@ -189,8 +199,6 @@
 (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
 
 (slime-setup '(slime-company))
-(slime-setup '(slime-repl))
-(add-to-list 'slime-contribs 'slime-repl)
 
 ;; modeline customizations
 (require 'moody)
@@ -287,8 +295,8 @@ pkill, etc."
   (save-some-buffers)
   (kill-emacs))
 
-(defvar my-clojure-directory "/home/dan/projects/clojure/")
-(defvar my-go-directory "/home/dan/projects/go/")
+(defvar my-clojure-directory "~/projects/clojure/")
+(defvar my-go-directory "~/projects/go/")
 
 (defun my-cloned-name (url)
   (s-replace ".git" ""
